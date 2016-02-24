@@ -35,10 +35,8 @@ class Civility < Thor
   desc "games", "List your current games"
   def games
     return missing_auth_error unless auth_key
-    response = get('GetGamesAndPlayers', {authKey: auth_key, playerIDText: user_id})
-    response = JSON.parse(response)
-    output_games(response['Games'])
-    self.config = @config.merge(games: response['Games'], updated_at: Time.now.to_i)
+    games = api_games
+    output_games(games)
   end
 
   desc 'play', 'Download a game to play'
@@ -50,6 +48,7 @@ class Civility < Thor
     path = game_path(game)
     file('GetLatestSaveFileBytes', {authKey: auth_key, gameID: game['GameId']}, path)
     puts "Saved #{game['Name']} to #{path}"
+    api_games
   end
 
   desc 'complete', 'Upload a completed turn'
@@ -76,6 +75,13 @@ class Civility < Thor
   end
 
   private
+
+  def api_games
+    response = get('GetGamesAndPlayers', {authKey: auth_key, playerIDText: user_id})
+    response = JSON.parse(response)
+    self.config = @config.merge(games: response['Games'], updated_at: Time.now.to_i)
+    response['Games']
+  end
 
   def game_path(game)
     "#{Dir.home}#{SAVE_DIRECTORY}#{FILE_PREFIX}-#{normalize(game['Name'])}-#{game['GameId']}.#{FILE_EXT}"
