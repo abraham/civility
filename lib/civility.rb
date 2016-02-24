@@ -4,12 +4,13 @@ require 'json'
 require 'yaml'
 require 'thor'
 
-class GMR < Thor
+class Civility < Thor
   VERSION = '1'
   SAVE_DIRECTORY = "/Documents/Aspyr/Sid\ Meier\'s\ Civilization\ 5/Saves/hotseat/"
-  FILE_PREFIX = 'gmr'
+  FILE_PREFIX = 'civility'
   FILE_EXT = 'Civ5Save'
   API = 'http://multiplayerrobot.com/api/Diplomacy/'
+  CONFIG_FILE = '.civility.yml'
 
   def initialize(*args)
     @config = load_config
@@ -175,7 +176,7 @@ class GMR < Thor
   end
 
   def missing_auth_error
-    puts 'Please run `gmr auth` first'
+    puts 'Please run `civility auth` first'
   end
 
   def config=(settings)
@@ -185,7 +186,7 @@ class GMR < Thor
   end
 
   def config_path
-    "#{Dir.home}/.gmr.yml"
+    "#{Dir.home}/#{CONFIG_FILE}"
   end
 
   def config_file?
