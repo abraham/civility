@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
 
-require '/Users/abraham/dev/civility/lib/civility'
+require 'civility'
 
 Civility.start(ARGV)
