@@ -42,20 +42,22 @@ class Civility < Thor
   end
 
   desc 'play', 'Download a game to play'
-  def play(name)
+  def play(*name)
+    name = name.join(' ')
     return missing_auth_error unless auth_key
     game = game_by_name(name)
-    return missing_game_error unless game
+    return missing_game_error(name) unless game
     path = game_path(game)
     file('GetLatestSaveFileBytes', {authKey: auth_key, gameID: game['GameId']}, path)
     puts "Saved #{game['Name']} to #{path}"
   end
 
   desc 'complete', 'Upload a completed turn'
-  def complete(name)
+  def complete(*name)
+    name = name.join(' ')
     return missing_auth_error unless auth_key
     game = game_by_name(name)
-    return missing_game_error unless game
+    return missing_game_error(name) unless game
     path = game_path(game)
     response = upload_file('SubmitTurn', {authKey: auth_key, turnId: game['CurrentTurn']['TurnId']}, path)
     response = JSON.parse(response)
@@ -171,8 +173,8 @@ class Civility < Thor
     "Unable to parse response\nCode: #{response.code}\nBody: #{response.body}"
   end
 
-  def missing_game_error
-    puts 'Unable to find that game'
+  def missing_game_error(name)
+    puts "Unable to find the game #{name}"
   end
 
   def missing_auth_error
