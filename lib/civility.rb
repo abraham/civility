@@ -5,7 +5,7 @@ require 'yaml'
 require 'thor'
 
 class Civility < Thor
-  VERSION = '2'
+  VERSION = '3'
   SAVE_DIRECTORY = "/Documents/Aspyr/Sid\ Meier\'s\ Civilization\ 5/Saves/hotseat/"
   FILE_PREFIX = 'civility'
   FILE_EXT = 'Civ5Save'
