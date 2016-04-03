@@ -9,34 +9,34 @@ class Civility < Thor
   SAVE_DIRECTORY = "/Documents/Aspyr/Sid\ Meier\'s\ Civilization\ 5/Saves/hotseat/"
   FILE_PREFIX = 'civility'
   FILE_EXT = 'Civ5Save'
-  API = 'http://multiplayerrobot.com/api/Diplomacy/'
   CONFIG_FILE = '.civility.yml'
 
   def initialize(*args)
     @config = load_config
+    @gmr = Civility::GMR.new(auth_key, user_id) if auth_key
     super(*args)
   end
 
   desc 'auth', 'Save auth key'
-  def auth(key = nil)
-    if key.nil?
-      url = 'http://multiplayerrobot.com/download'
-      puts "Grab your Authentication Key from #{url}"
-      system('open', url)
+  def auth(auth_key = nil)
+    if auth_key.nil?
+      auth_url = Civility::GMR.auth_url
+      puts "Grab your Authentication Key from #{auth_url}"
+      system('open', auth_url)
     else
+      @gmr = Civility::GMR.new(auth_key)
       @config[:version] = VERSION
-      @config[:auth] = key
+      @config[:auth] = auth_key
       @config[:user] = user
       self.config = @config
       puts "Hello, #{user['PersonaName']}, your auth is all configured!"
     end
   end
 
-  desc "games", "List your current games"
+  desc 'games', 'List your current games'
   def games
     return missing_auth_error unless auth_key
-    games = api_games
-    output_games(games)
+    output_games sync_games
   end
 
   desc 'play', 'Download a game to play'
@@ -45,10 +45,11 @@ class Civility < Thor
     return missing_auth_error unless auth_key
     game = game_by_name(name)
     return missing_game_error(name) unless game
-    path = game_path(game)
-    file('GetLatestSaveFileBytes', {authKey: auth_key, gameID: game['GameId']}, path)
+    path = save_path(game)
+    data = @gmr.download(game['GameId'])
+    save_file(path, data)
     puts "Saved #{game['Name']} to #{path}"
-    api_games
+    sync_games
   end
 
   desc 'complete', 'Upload a completed turn'
@@ -57,9 +58,8 @@ class Civility < Thor
     return missing_auth_error unless auth_key
     game = game_by_name(name)
     return missing_game_error(name) unless game
-    path = game_path(game)
-    response = upload_file('SubmitTurn', {authKey: auth_key, turnId: game['CurrentTurn']['TurnId']}, path)
-    response = JSON.parse(response)
+    path = save_path(game)
+    response = @gmr.upload(game['CurrentTurn']['TurnId'], File.read(path))
     case response['ResultType']
     when 0
       puts "UnexpectedError: #{response}"
@@ -76,14 +76,13 @@ class Civility < Thor
 
   private
 
-  def api_games
-    response = get('GetGamesAndPlayers', {authKey: auth_key, playerIDText: user_id})
-    response = JSON.parse(response)
-    self.config = @config.merge(games: response['Games'], updated_at: Time.now.to_i)
-    response['Games']
+  def sync_games
+    games = @gmr.games
+    self.config = @config.merge(games: games, updated_at: Time.now.to_i)
+    games
   end
 
-  def game_path(game)
+  def save_path(game)
     "#{Dir.home}#{SAVE_DIRECTORY}#{FILE_PREFIX}-#{normalize(game['Name'])}-#{game['GameId']}.#{FILE_EXT}"
   end
 
@@ -100,73 +99,35 @@ class Civility < Thor
   end
 
   def output_games(games)
-    for game in games
+    games.each do |game|
       turn = (user_id == game['CurrentTurn']['UserId'] ? " and it's your turn" : '')
       puts "#{game['Name']} with #{game['Players'].size} other players#{turn}"
     end
-    puts "If your games are missing, try again" if games.size == 0
+    puts "\nIf your games are missing, try again"
   end
 
   def game_by_name(name)
     name = normalize(name)
-    games_list.find {|game| normalize(game['Name']) == name}
+    games_list.find { |game| normalize(game['Name']) == name }
   end
 
   def user
-    user_id = get('AuthenticateUser', {authKey: auth_key})
-    response = get('GetGamesAndPlayers', {authKey: auth_key, playerIDText: user_id})
-    players = JSON.parse(response)['Players']
-    user_from_players(user_id, players)
-  end
-
-  def user_from_players(user_id, players)
-    user_id = user_id.to_i
-    players.find {|player| player['SteamID'] == user_id }
+    @gmr.user
   end
 
   def normalize(name)
     name.downcase.strip.gsub(/[^\w]/, '')
   end
 
-  def get(method, params)
-    uri = URI.join(API, method)
-    uri.query = URI.encode_www_form(params)
-    response = Net::HTTP.get_response(uri)
-    fail error_message(response) unless response.code == '200'
-    response.body
-  end
-
-  def file(method, params, path)
-    uri = URI.parse("#{API}#{method}")
-    uri.query = URI.encode_www_form(params)
-    f = open(path, "wb")
-    Net::HTTP.start(uri.host) do |http|
-      http.request_get(uri.request_uri) do |response|
-        fail error_message(response) unless response.code == '200'
-        response.read_body do |segment|
-          f.write(segment)
-        end
-      end
-    end
-  ensure
-    f.close()
-  end
-
-  def upload_file(method, params, path)
-    uri = URI.parse("#{API}#{method}")
-    uri.query = URI.encode_www_form(params)
-    data = File.read(path)
-    http = Net::HTTP.new(uri.host)
-    request = Net::HTTP::Post.new(uri.request_uri)
-    request.body = data
-    response = http.request(request)
-    fail error_message(response) unless response.code == '200'
-    response.body
+  def save_file(path, data)
+    file = open(path, 'wb')
+    file.write(data)
+    file.close
   end
 
   def load_config
     if config_file?
-      @config = YAML::load_file config_path
+      @config = YAML.load_file config_path
     else
       self.config = {}
     end
@@ -201,3 +162,5 @@ class Civility < Thor
     File.exist?(config_path)
   end
 end
+
+require 'civility/gmr'
