@@ -11,6 +11,8 @@ Gem::Specification.new do |s|
   s.license       = 'MIT'
   s.executables   = ['civility']
   s.require_paths = ['lib']
+  s.cert_chain    = ['certs/abraham.pem']
+  s.signing_key   = File.expand_path('~/.ssh/gem-private_key.pem') if $0 =~ /gem\z/
 
   s.add_runtime_dependency('thor', '~> 0')
   s.add_development_dependency('pry', '~> 0')
