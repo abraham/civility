@@ -18,6 +18,7 @@ class Civility < Thor
   end
 
   desc 'auth', 'Save auth key'
+  option aliases: :a
   def auth(auth_key = nil)
     if auth_key.nil?
       auth_url = Civility::GMR.auth_url
@@ -34,12 +35,14 @@ class Civility < Thor
   end
 
   desc 'games', 'List your current games'
+  option aliases: :g
   def games
     return missing_auth_error unless auth_key
     output_games sync_games
   end
 
   desc 'play', 'Download a game to play'
+  option aliases: :p
   def play(*name)
     name = name.join(' ')
     return missing_auth_error unless auth_key
@@ -53,6 +56,7 @@ class Civility < Thor
   end
 
   desc 'complete', 'Upload a completed turn'
+  option aliases: :c
   def complete(*name)
     name = name.join(' ')
     return missing_auth_error unless auth_key
