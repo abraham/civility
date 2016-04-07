@@ -42,7 +42,7 @@ class Civility
       JSON.parse(response)
     end
 
-    # TODO: Implement a method shortcut method to get a game turn_id
+    # TODO: Implement a shortcut method to get a game turn_id
     # def turn_id(game_id)
     # end
 

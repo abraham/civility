@@ -14,6 +14,7 @@ class Civility < Thor
   def initialize(*args)
     @config = load_config
     @gmr = Civility::GMR.new(auth_key, user_id) if auth_key
+    @slack = Civility::Ext::Slack.new(@config[:slack][:bot_token]) if @config[:slack]
     super(*args)
   end
 
@@ -69,6 +70,7 @@ class Civility < Thor
       puts "UnexpectedError: #{response}"
     when 1
       puts "You earned #{response['PointsEarned']} points completing #{game['Name']} from #{path}"
+      notify_slack if @slack
     when 2
       puts "It's not your turn"
     when 3
@@ -78,7 +80,34 @@ class Civility < Thor
     end
   end
 
+  desc 'slack', 'Enable slack integration'
+  def slack(status, channel_name = nil, bot_token = nil, next_player_name)
+    if status == 'on'
+      if channel_name.nil? || bot_token.nil? || next_player_name.nil?
+        puts 'Channel name, bot token, and next player name are required'
+        puts '$ civility slack on civility xoxb-123xyz'
+      else
+        @config[:slack] = {
+          channel_name: channel_name,
+          bot_token: bot_token,
+          next_player_name: next_player_name
+        }
+        puts 'Slack integration enabled'
+      end
+    else
+      @config.delete(:slack)
+      puts 'Slack integration disabled'
+    end
+    self.config = @config
+  end
+
   private
+
+  def notify_slack
+    message = "@#{@config[:slack][:next_player_name]}'s turn'"
+    code, body = @slack.post_message('sandbox', message, 'Shelly')
+    puts "Error updating Slack: #{body}" unless code == 200
+  end
 
   def sync_games
     games = @gmr.games
@@ -168,3 +197,4 @@ class Civility < Thor
 end
 
 require 'civility/gmr'
+require 'civility/ext'

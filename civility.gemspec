@@ -5,7 +5,7 @@ Gem::Specification.new do |s|
   s.description   = 'Civility is the easiest way to manage your Civ5 hotseat games hosted on Giant Multiplayer Robot'
   s.authors       = ['Abraham Williams']
   s.email         = 'abraham@abrah.am'
-  s.files         = ['lib/civility.rb', 'lib/civility/gmr.rb']
+  s.files         = ['lib/civility.rb', 'lib/civility/gmr.rb', 'lib/civility/ext.rb', 'lib/civility/ext/slack.rb']
   s.homepage      = 'https://github.com/abraham/civility'
   s.license       = 'MIT'
   s.executables   = ['civility']
