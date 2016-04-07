@@ -81,7 +81,7 @@ class Civility < Thor
   end
 
   desc 'slack', 'Enable slack integration'
-  def slack(status, channel_name = nil, bot_token = nil, next_player_name)
+  def slack(status, channel_name = nil, bot_token = nil, next_player_name = nil)
     if status == 'on'
       if channel_name.nil? || bot_token.nil? || next_player_name.nil?
         puts 'Channel name, bot token, and next player name are required'
@@ -104,7 +104,7 @@ class Civility < Thor
   private
 
   def notify_slack
-    message = "@#{@config[:slack][:next_player_name]}'s turn'"
+    message = "@#{@config[:slack][:next_player_name]}'s turn"
     code, body = @slack.post_message('sandbox', message, 'Shelly')
     puts "Error updating Slack: #{body}" unless code == 200
   end
