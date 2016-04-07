@@ -88,6 +88,7 @@ class Civility < Thor
       else
         game = game_by_name(game_name)
         return missing_game_error(name) unless game
+        @config[:slack] = {} if @config[:slack].nil?
         @config[:slack].merge!(
           game['GameId'] => {
             channel_name: channel_name,
