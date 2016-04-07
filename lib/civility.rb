@@ -14,7 +14,6 @@ class Civility < Thor
   def initialize(*args)
     @config = load_config
     @gmr = Civility::GMR.new(auth_key, user_id) if auth_key
-    @slack = Civility::Ext::Slack.new(@config[:slack][:bot_token]) if @config[:slack]
     super(*args)
   end
 
@@ -70,7 +69,7 @@ class Civility < Thor
       puts "UnexpectedError: #{response}"
     when 1
       puts "You earned #{response['PointsEarned']} points completing #{game['Name']} from #{path}"
-      notify_slack if @slack
+      notify_slack(game) if @config[:slack]
     when 2
       puts "It's not your turn"
     when 3
@@ -81,18 +80,22 @@ class Civility < Thor
   end
 
   desc 'slack', 'Enable slack integration'
-  def slack(status, channel_name = nil, bot_token = nil, next_player_name = nil)
+  def slack(status, bot_token = nil, channel_name = nil, next_player_name = nil, game_name = nil)
     if status == 'on'
-      if channel_name.nil? || bot_token.nil? || next_player_name.nil?
-        puts 'Channel name, bot token, and next player name are required'
-        puts '$ civility slack on civility xoxb-123xyz'
+      if [bot_token, channel_name, next_player_name, game_name].any?(&:nil?)
+        puts 'Bot token, channel name, next player name, and game name are required'
+        puts '$ civility slack on xoxb-123xyz awecome_channel sam awesome civ 5 game'
       else
-        @config[:slack] = {
-          channel_name: channel_name,
-          bot_token: bot_token,
-          next_player_name: next_player_name
-        }
-        puts 'Slack integration enabled'
+        game = game_by_name(game_name)
+        return missing_game_error(name) unless game
+        @config[:slack].merge!(
+          game['GameId'] => {
+            channel_name: channel_name,
+            bot_token: bot_token,
+            next_player_name: next_player_name
+          }
+        )
+        puts "Slack integration enabled for #{game_name}"
       end
     else
       @config.delete(:slack)
@@ -103,9 +106,12 @@ class Civility < Thor
 
   private
 
-  def notify_slack
-    message = "@#{@config[:slack][:next_player_name]}'s turn"
-    code, body = @slack.post_message('sandbox', message, 'Shelly')
+  def notify_slack(game)
+    slack_config = @config[:slack][game['GameId']]
+    return puts 'Slack not configured for game' unless slack_config
+    slack = Civility::Ext::Slack.new(slack_config[:bot_token])
+    message = "@#{slack_config[:next_player_name]}'s turn!"
+    code, body = slack.post_message(slack_config[:channel_name], message, 'Shelly')
     puts "Error updating Slack: #{body}" unless code == 200
   end
 
