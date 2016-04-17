@@ -187,9 +187,9 @@ class Civility < Thor
   end
 
   def save_file(path, data)
-    file = open(path, 'wb')
-    file.write(data)
-    file.close
+    open(path, 'wb') do |file|
+      file.write(data)
+    end
   end
 
   def load_config
