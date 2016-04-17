@@ -28,6 +28,15 @@ class Civility < Thor
   }
   SAVE_DIRECTORY = "#{PLATFORM_DIRS[OS]}/Saves/hotseat/"
 
+  CIV_APPID = 8930
+  RUN_URI = "steam://run/#{CIV_APPID}"
+  RUN_CMDS = {
+    windows: 'start',
+    mac: 'open',
+    linux: nil
+  }
+  RUN_CMD = "#{RUN_CMDS[OS]} #{RUN_URI}"
+
   def initialize(*args)
     @config = load_config
     @gmr = Civility::GMR.new(auth_key, user_id) if auth_key
@@ -69,6 +78,7 @@ class Civility < Thor
     data = @gmr.download(game['GameId'])
     save_file(path, data)
     puts "Saved #{game['Name']} to #{path}"
+    run_civilization
     sync_games
   end
 
@@ -217,6 +227,10 @@ class Civility < Thor
 
   def config_file?
     File.exist?(config_path)
+  end
+
+  def run_civilization
+    `#{RUN_CMD}`
   end
 end
 
