@@ -36,7 +36,7 @@ Upload you completed turn:
 OS Support
 ----------
 
-civility has only been minimally tested on OS X.
+civility has only been minimally tested on OS X and Windows.
 
 Security
 --------
