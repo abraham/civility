@@ -6,10 +6,27 @@ require 'thor'
 
 class Civility < Thor
   VERSION = '5'
-  SAVE_DIRECTORY = "/Documents/Aspyr/Sid\ Meier\'s\ Civilization\ 5/Saves/hotseat/"
   FILE_PREFIX = 'civility'
   FILE_EXT = 'Civ5Save'
   CONFIG_FILE = '.civility.yml'
+  OS = lambda do
+    # From http://stackoverflow.com/a/171011/1621312
+    case RUBY_PLATFORM
+    when /cygwin|mswin|mingw|bccwin|wince|emx/
+      :windows
+    when /darwin/
+      :mac
+    else
+      fail "Unknown Platform #{RUBY_PLATFORM}"
+    end
+  end.call
+
+  PLATFORM_DIRS = {
+    windows: "/Documents/my games/Sid Meier's Civilization 5",
+    mac: "/Documents/Aspyr/Sid\ Meier\'s\ Civilization\ 5",
+    linux: nil
+  }
+  SAVE_DIRECTORY = "#{PLATFORM_DIRS[OS]}/Saves/hotseat/"
 
   def initialize(*args)
     @config = load_config
