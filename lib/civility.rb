@@ -17,7 +17,7 @@ class Civility < Thor
     when /darwin/
       :mac
     else
-      :linux
+      fail "Unknown Platform #{RUBY_PLATFORM}"
     end
   end.call
 
