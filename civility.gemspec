@@ -14,6 +14,7 @@ Gem::Specification.new do |s|
   s.signing_key   = File.expand_path('~/.ssh/gem-private_key.pem') if $0 =~ /gem\z/
 
   s.add_runtime_dependency('thor', '~> 0')
+  s.add_development_dependency('rake', '~> 11')
   s.add_development_dependency('pry', '~> 0')
   s.add_development_dependency('rspec', '~> 3')
   s.add_development_dependency('webmock', '~> 1')
