@@ -25,7 +25,7 @@ class Civility < Thor
     windows: "/Documents/my games/Sid Meier's Civilization 5",
     mac: "/Documents/Aspyr/Sid\ Meier\'s\ Civilization\ 5",
     linux: nil
-  }
+  }.freeze
   SAVE_DIRECTORY = "#{PLATFORM_DIRS[OS]}/Saves/hotseat/"
 
   CIV_APPID = 8930
@@ -34,7 +34,7 @@ class Civility < Thor
     windows: 'start',
     mac: 'open',
     linux: nil
-  }
+  }.freeze
   RUN_CMD = "#{RUN_CMDS[OS]} #{RUN_URI}"
 
   def initialize(*args)
@@ -198,13 +198,6 @@ class Civility < Thor
     else
       self.config = {}
     end
-  end
-
-  def error_message(response)
-    body = JSON.parse(response.body)
-    "Code: #{response.code}\nBody: #{body}"
-  rescue JSON::ParserError
-    "Unable to parse response\nCode: #{response.code}\nBody: #{response.body}"
   end
 
   def missing_game_error(name)
