@@ -1,6 +1,3 @@
-require 'net/http'
-require 'uri'
-require 'yaml'
 require 'thor'
 
 class Civility < Thor
@@ -37,7 +34,7 @@ class Civility < Thor
   RUN_CMD = "#{RUN_CMDS[OS]} #{RUN_URI}"
 
   def initialize(*args)
-    @config = load_config
+    @config = Civility::Config.new(path: config_path)
     @gmr = Civility::GMR.new(auth_key, user_id) if auth_key
     super(*args)
   end
@@ -51,10 +48,7 @@ class Civility < Thor
       system('open', auth_url)
     else
       @gmr = Civility::GMR.new(auth_key)
-      @config[:version] = VERSION
-      @config[:auth] = auth_key
-      @config[:user] = user
-      self.config = @config
+      config.set(version: VERSION, auth: auth_key, user: user)
       puts "Hello, #{user['PersonaName']}, your auth is all configured!"
     end
   end
@@ -95,7 +89,7 @@ class Civility < Thor
       puts "UnexpectedError: #{response}"
     when 1
       puts "You earned #{response['PointsEarned']} points completing #{game['Name']} from #{path}"
-      notify_slack(game) if @config[:slack]
+      notify_slack(game) if config.get(:slack)
     when 2
       puts "It's not your turn"
     when 3
@@ -114,27 +108,29 @@ class Civility < Thor
       else
         game = game_by_name(game_name)
         return missing_game_error(name) unless game
-        @config[:slack] = {} if @config[:slack].nil?
-        @config[:slack].merge!(
+        slack_config = config.get(:slack) || {}
+        slack_config.merge!(
           game['GameId'] => {
             channel_name: channel_name,
             bot_token: bot_token,
             next_player_name: next_player_name
           }
         )
+        config.set(slack: slack_config)
         puts "Slack integration enabled for #{game_name}"
       end
     else
-      @config.delete(:slack)
+      config.delete(:slack)
       puts 'Slack integration disabled'
     end
-    self.config = @config
   end
 
   private
 
+  attr_reader :config
+
   def notify_slack(game)
-    slack_config = @config[:slack][game['GameId']]
+    slack_config = config.get(:slack)[game['GameId']]
     return puts 'Slack not configured for game' unless slack_config
     slack = Civility::Ext::Slack.new(slack_config[:bot_token])
     message = "@#{slack_config[:next_player_name]}'s turn!"
@@ -144,7 +140,7 @@ class Civility < Thor
 
   def sync_games
     games = @gmr.games
-    self.config = @config.merge(games: games, updated_at: Time.now.to_i)
+    config.set(games: games)
     games
   end
 
@@ -153,15 +149,15 @@ class Civility < Thor
   end
 
   def auth_key
-    @config[:auth]
+    config.get(:auth)
   end
 
   def user_id
-    @config[:user]['SteamID']
+    config.get(:user)['SteamID']
   end
 
   def games_list
-    @config[:games]
+    config.get(:games)
   end
 
   def output_games(games)
@@ -191,14 +187,6 @@ class Civility < Thor
     end
   end
 
-  def load_config
-    if config_file?
-      @config = YAML.load_file config_path
-    else
-      self.config = {}
-    end
-  end
-
   def missing_game_error(name)
     puts "Unable to find the game #{name}"
   end
@@ -207,24 +195,15 @@ class Civility < Thor
     puts 'Please run `civility auth` first'
   end
 
-  def config=(settings)
-    File.open(config_path, 'w') do |file|
-      file.write settings.to_yaml
-    end
+  def run_civilization
+    `#{RUN_CMD}`
   end
 
   def config_path
     "#{Dir.home}/#{CONFIG_FILE}"
   end
-
-  def config_file?
-    File.exist?(config_path)
-  end
-
-  def run_civilization
-    `#{RUN_CMD}`
-  end
 end
 
+require 'civility/config'
 require 'civility/gmr'
 require 'civility/ext'

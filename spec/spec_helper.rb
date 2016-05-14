@@ -1,6 +1,8 @@
 require 'bundler/setup'
 require 'webmock/rspec'
 require 'pry'
+require 'timecop'
+require 'civility/config'
 require 'civility/gmr'
 
 Bundler.setup

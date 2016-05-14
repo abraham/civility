@@ -18,4 +18,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency('pry', '~> 0')
   s.add_development_dependency('rspec', '~> 3')
   s.add_development_dependency('webmock', '~> 1')
+  s.add_development_dependency('timecop', '~> 0')
 end
