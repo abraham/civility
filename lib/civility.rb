@@ -133,7 +133,7 @@ class Civility < Thor
     slack_config = config.get(:slack)[game['GameId']]
     return puts 'Slack not configured for game' unless slack_config
     slack = Civility::Ext::Slack.new(slack_config[:bot_token])
-    message = "@#{slack_config[:next_player_name]}'s turn!"
+    message = "@#{slack_config[:next_player_name]}'s turnt!"
     code, body = slack.post_message(slack_config[:channel_name], message, 'Shelly')
     puts "Error updating Slack: #{body}" unless code == 200
   end
